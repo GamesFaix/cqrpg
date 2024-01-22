@@ -2,7 +2,7 @@
   "profiles": {
     "CQRPG.SectorSplitter": {
       "commandName": "Project",
-      "commandLineArgs": "foo"
+      "commandLineArgs": "--working-dir \"C:\\Users\\james\\Desktop\\CQRPG\\maps\\Step 07 - Sectors Master\" --source \"E1M1.png\" --sector-size 560"
     }
   }
 }
