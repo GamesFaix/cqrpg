@@ -24,14 +24,39 @@ let private createOutDirIfMissing (outDir: string) : unit SplitterResult =
         with
         | e -> Error e.Message
 
-let private renderSector (outDir: string) (sourceName: string) (sourceImage: Image) (x: int, y: int) : unit SplitterResult =
+let private hasAnyWhitePixels (img: Bitmap) : bool =
+    seq {
+        for x in [0..img.Width-1] do
+            for y in [0..img.Height-1] do
+                yield (x, y)
+    }
+    |> Seq.exists (fun (x, y) -> 
+        let px = img.GetPixel(x, y)
+        px.R = 255uy && px.B = 255uy & px.G = 255uy
+    )
+
+let private renderSector (outDir: string) (sourceName: string) (sourceImage: Image) (x: int, y: int) (sectorSize: int) : bool SplitterResult =
 
     let format n = n.ToString().PadLeft(2, '0')
     let filename = Path.Combine(outDir, $"{sourceName}-{format x}-{format y}.png")
 
-    printfn $"rendering {filename}"
+    printfn $"Checking {filename}..."
 
-    Ok ()
+    use sectorImg = new Bitmap(sectorSize, sectorSize)
+    let g = Graphics.FromImage(sectorImg)
+    let destRect = new Rectangle(0, 0, sectorSize, sectorSize) // whole sector
+    let srcRect = new Rectangle((x-1) * sectorSize, (y-1) * sectorSize, sectorSize, sectorSize)
+
+    g.DrawImage(sourceImage, destRect, srcRect, GraphicsUnit.Pixel)
+
+    // Don't save blank sectors
+    if hasAnyWhitePixels sectorImg then
+        sectorImg.Save filename
+        printfn $"Rendered {filename}."
+        Ok true
+    else
+        printfn $"Skipped blank sector {filename}."
+        Ok false
 
 let private getCellCoordinates (sourceWidth: int, sourceHeight: int) (sectorSize: int) : (int * int) list =
     let columns = (float sourceWidth / float sectorSize) |> Math.Ceiling |> int
@@ -44,7 +69,7 @@ let private getCellCoordinates (sourceWidth: int, sourceHeight: int) (sectorSize
     }
     |> Seq.toList
 
-let split (workingDir: string) (source: string) (sectorSize: int) : unit SplitterResult =
+let split (workingDir: string) (source: string) (sectorSize: int) : int SplitterResult =
     Path.Combine(workingDir, source)
     |> loadSourceImage
     |> Result.bind (fun sourceImage ->
@@ -55,7 +80,13 @@ let split (workingDir: string) (source: string) (sectorSize: int) : unit Splitte
         |> Result.bind (fun _ -> 
             getCellCoordinates (sourceImage.Width, sourceImage.Height) sectorSize
             |> List.fold 
-                (fun _ cell -> renderSector outDir sourceName sourceImage cell) 
-                (Ok ())
+                (fun acc cell -> 
+                    acc
+                    |> Result.bind (fun sectorCount -> 
+                        renderSector outDir sourceName sourceImage cell sectorSize
+                        |> Result.map (function | true -> sectorCount + 1 | _ -> sectorCount)                    
+                    )
+                ) 
+                (Ok 0)
         )
     )

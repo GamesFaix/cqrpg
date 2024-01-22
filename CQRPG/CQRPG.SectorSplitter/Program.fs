@@ -32,8 +32,8 @@ let main (args: string array) =
         let result = Splitter.split parsedArgs.WorkingDir parsedArgs.Source parsedArgs.SectorSize
 
         match result with
-        | Ok () ->
-            printfn "Done"
+        | Ok sectorCount ->
+            printfn $"Rendered {sectorCount} sectors"
         | Error e ->
             printfn "Failed: %A" e
 
