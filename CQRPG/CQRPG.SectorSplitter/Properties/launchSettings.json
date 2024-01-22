@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CQRPG.SectorSplitter": {
+      "commandName": "Project",
+      "commandLineArgs": "foo"
+    }
+  }
+}
