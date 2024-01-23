@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.1.5" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.2" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.1" />
   </ItemGroup>
 

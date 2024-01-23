@@ -1,19 +1,24 @@
 ﻿module Splitter
 
 open System
-open System.Drawing
+//open System.Drawing
 open System.IO
+open SixLabors.ImageSharp
+open SixLabors.ImageSharp.PixelFormats
+//open SixLabors.ImageSharp.Drawing.Processing;
+open SixLabors.ImageSharp.Processing
 
+type private Image = Image<Rgba32>
 type SplitterResult<'data> = Result<'data, string>
 
-let private font = new Font("Consolas", 6f)
+//let private font = new Font("Consolas", 6f)
 
 let private loadSourceImage (source: string) : Image SplitterResult =
     if not <| File.Exists source then
         Error $"Source file not found: {source}"
     else
         use fs = new FileStream(source, FileMode.Open, FileAccess.Read)
-        let img = Image.FromStream fs
+        let img = Image.Load<Rgba32> fs
         Ok img
 
 let private createOutDirIfMissing (outDir: string) : unit SplitterResult =
@@ -27,16 +32,16 @@ let private createOutDirIfMissing (outDir: string) : unit SplitterResult =
         with
         | e -> Error e.Message
 
-let private saveSectorIfNotBlank (sectorImage: Bitmap) (filename: string) : bool SplitterResult =
-    let hasAnyWhitePixels (img: Bitmap) : bool =
+let private saveSectorIfNotBlank (sectorImage: Image) (filename: string) : bool SplitterResult =
+    let hasAnyWhitePixels (img: Image) : bool =
         seq {
             for x in [0..img.Width-1] do
                 for y in [0..img.Height-1] do
                     yield (x, y)
         }
         |> Seq.exists (fun (x, y) -> 
-            let px = img.GetPixel(x, y)
-            px.R = 255uy && px.B = 255uy & px.G = 255uy
+            let px = img[x, y]
+            px.R = 255uy && px.B = 255uy && px.G = 255uy
         )
     
     // Don't save blank sectors
@@ -48,6 +53,17 @@ let private saveSectorIfNotBlank (sectorImage: Bitmap) (filename: string) : bool
         printfn $"Skipped blank sector {filename}."
         Ok false
 
+let private rectIntersection (r1: Rectangle) (r2: Rectangle) : Rectangle option =
+    let left = Math.Max(r1.Left, r2.Left)
+    let right = Math.Min(r1.Right, r2.Right)
+    let top = Math.Max(r1.Top, r2.Top)
+    let bottom = Math.Min(r1.Bottom, r2.Bottom)
+    let h = bottom - top
+    let w = right - left
+
+    if (h <= 0 || w <= 0) then None
+    else Some <| Rectangle (left, top, w, h)
+
 let private renderSector (outDir: string) (sourceName: string) (sourceImage: Image) (x: int, y: int) (sectorSize: int) : bool SplitterResult =
 
     let format n = n.ToString().PadLeft(2, '0')
@@ -55,16 +71,20 @@ let private renderSector (outDir: string) (sourceName: string) (sourceImage: Ima
 
     printfn $"Checking {filename}..."
 
-    use sectorImg = new Bitmap(sectorSize, sectorSize)
-    let g = Graphics.FromImage(sectorImg)
-    let destRect = new Rectangle(0, 0, sectorSize, sectorSize) // whole sector
-    let srcRect = new Rectangle((x-1) * sectorSize, (y-1) * sectorSize, sectorSize, sectorSize)
+    let srcRect = 
+        Rectangle((x-1) * sectorSize, (y-1) * sectorSize, sectorSize, sectorSize)
+        |> rectIntersection sourceImage.Bounds
 
-    g.DrawImage(sourceImage, destRect, srcRect, GraphicsUnit.Pixel)
+    match srcRect with
+    | Some rect ->
+        use sectorImg = sourceImage.Clone(fun i -> i.Crop rect |> ignore)
 
-    g.DrawString($"{sourceName}\n({x},{y})", font, Brushes.Gainsboro, PointF(5f, 5f))
+        //let g = Graphics.FromImage(sectorImg)
+        //g.DrawString($"{sourceName}\n({x},{y})", font, Brushes.Gainsboro, PointF(5f, 5f))
 
-    saveSectorIfNotBlank sectorImg filename
+        saveSectorIfNotBlank sectorImg filename        
+    | None ->
+        Error "Sector rectangle was completely outside image bounds."
 
 let private getCellCoordinates (sourceWidth: int, sourceHeight: int) (sectorSize: int) : (int * int) list =
     let columns = (float sourceWidth / float sectorSize) |> Math.Ceiling |> int
