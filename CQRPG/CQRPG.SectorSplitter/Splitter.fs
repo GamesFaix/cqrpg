@@ -1,17 +1,11 @@
 ﻿module Splitter
 
 open System
-//open System.Drawing
 open System.IO
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.PixelFormats
-//open SixLabors.ImageSharp.Drawing.Processing;
 open SixLabors.ImageSharp.Processing
-
-type private Image = Image<Rgba32>
-type SplitterResult<'data> = Result<'data, string>
-
-//let private font = new Font("Consolas", 6f)
+open Model
 
 let private loadSourceImage (source: string) : Image SplitterResult =
     if not <| File.Exists source then
@@ -78,11 +72,13 @@ let private renderSector (outDir: string) (sourceName: string) (sourceImage: Ima
     match srcRect with
     | Some rect ->
         use sectorImg = sourceImage.Clone(fun i -> i.Crop rect |> ignore)
+        
+        SectorLabeler.drawLabel sourceName (x, y) sectorImg
+        |> Result.bind (fun labeled ->
+            use sectorImg = labeled
+            saveSectorIfNotBlank sectorImg filename                
+        )
 
-        //let g = Graphics.FromImage(sectorImg)
-        //g.DrawString($"{sourceName}\n({x},{y})", font, Brushes.Gainsboro, PointF(5f, 5f))
-
-        saveSectorIfNotBlank sectorImg filename        
     | None ->
         Error "Sector rectangle was completely outside image bounds."
 
