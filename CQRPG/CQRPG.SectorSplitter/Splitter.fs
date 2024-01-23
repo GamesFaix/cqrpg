@@ -6,11 +6,14 @@ open System.IO
 
 type SplitterResult<'data> = Result<'data, string>
 
+let private font = new Font("Consolas", 6f)
+
 let private loadSourceImage (source: string) : Image SplitterResult =
     if not <| File.Exists source then
         Error $"Source file not found: {source}"
     else
-        let img = Image.FromFile(source)
+        use fs = new FileStream(source, FileMode.Open, FileAccess.Read)
+        let img = Image.FromStream fs
         Ok img
 
 let private createOutDirIfMissing (outDir: string) : unit SplitterResult =
@@ -24,16 +27,26 @@ let private createOutDirIfMissing (outDir: string) : unit SplitterResult =
         with
         | e -> Error e.Message
 
-let private hasAnyWhitePixels (img: Bitmap) : bool =
-    seq {
-        for x in [0..img.Width-1] do
-            for y in [0..img.Height-1] do
-                yield (x, y)
-    }
-    |> Seq.exists (fun (x, y) -> 
-        let px = img.GetPixel(x, y)
-        px.R = 255uy && px.B = 255uy & px.G = 255uy
-    )
+let private saveSectorIfNotBlank (sectorImage: Bitmap) (filename: string) : bool SplitterResult =
+    let hasAnyWhitePixels (img: Bitmap) : bool =
+        seq {
+            for x in [0..img.Width-1] do
+                for y in [0..img.Height-1] do
+                    yield (x, y)
+        }
+        |> Seq.exists (fun (x, y) -> 
+            let px = img.GetPixel(x, y)
+            px.R = 255uy && px.B = 255uy & px.G = 255uy
+        )
+    
+    // Don't save blank sectors
+    if hasAnyWhitePixels sectorImage then
+        sectorImage.Save filename
+        printfn $"Rendered {filename}."
+        Ok true
+    else
+        printfn $"Skipped blank sector {filename}."
+        Ok false
 
 let private renderSector (outDir: string) (sourceName: string) (sourceImage: Image) (x: int, y: int) (sectorSize: int) : bool SplitterResult =
 
@@ -49,14 +62,9 @@ let private renderSector (outDir: string) (sourceName: string) (sourceImage: Ima
 
     g.DrawImage(sourceImage, destRect, srcRect, GraphicsUnit.Pixel)
 
-    // Don't save blank sectors
-    if hasAnyWhitePixels sectorImg then
-        sectorImg.Save filename
-        printfn $"Rendered {filename}."
-        Ok true
-    else
-        printfn $"Skipped blank sector {filename}."
-        Ok false
+    g.DrawString($"{sourceName}\n({x},{y})", font, Brushes.Gainsboro, PointF(5f, 5f))
+
+    saveSectorIfNotBlank sectorImg filename
 
 let private getCellCoordinates (sourceWidth: int, sourceHeight: int) (sectorSize: int) : (int * int) list =
     let columns = (float sourceWidth / float sectorSize) |> Math.Ceiling |> int

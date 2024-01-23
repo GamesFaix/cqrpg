@@ -2,7 +2,7 @@
   "profiles": {
     "CQRPG.SectorSplitter": {
       "commandName": "Project",
-      "commandLineArgs": "--working-dir \"C:\\Users\\james\\Desktop\\CQRPG\\maps\\Step 07 - Sectors Master\" --source \"E1M1.png\" --sector-size 560"
+      "commandLineArgs": "--working-dir \"C:\\Users\\james\\Desktop\\CQRPG\\maps\\Step 02 - Scale and Prep for DS\" --source \"E1M2 - No sector grid.png\" --sector-size 2400"
     }
   }
 }
