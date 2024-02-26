@@ -28,14 +28,23 @@ let parse args =
 let main (args: string array) =
     try
         let parsedArgs = parse args
+        let dir = parsedArgs.WorkingDir
+        let src = parsedArgs.Source
+        let size = parsedArgs.SectorSize
 
-        let result = Splitter.split parsedArgs.WorkingDir parsedArgs.Source parsedArgs.SectorSize
+//        Splitter.split dir src size
 
-        match result with
-        | Ok sectorCount ->
+        Ok 1
+        |> Result.bind (fun sectorCount ->
             printfn $"Rendered {sectorCount} sectors"
-        | Error e ->
+            PdfBundler.bundleSectorsToPdf dir src
+        )
+        |> Result.map (fun () -> printfn "Bundled sectors")
+        |> Result.mapError (fun e ->
             printfn "Failed: %A" e
+            e
+        )
+        |> ignore
 
     with
     | :? ArguParseException as e -> 
