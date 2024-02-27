@@ -22,6 +22,6 @@ Print the following files to make your own copy:
   * _The Sectors should be printed on 8.5"x11" cardstock and cut to 8" squares._
   * _Currently only E1M2: Storage Facility is available._
 
-Other supplies required:
+Other supplies:
 * Lots of coins to count health, armor, and zorch.
 * Stands to hold tokens up. These are also available from Print & Play Games. You could also use binder clips available at any office supply store.
