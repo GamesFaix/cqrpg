@@ -2,6 +2,8 @@
 
 CQRPG is a casual table-top role-playing game, based on the Chex Quest computer game series.
 
+<img src="./images/game2.jpg" width=1000 />
+
 ## Print and Play
 
 Print the following files to make your own copy:
@@ -25,3 +27,15 @@ Print the following files to make your own copy:
 Other supplies:
 * Lots of coins to count health, armor, and zorch.
 * Stands to hold tokens up. These are also available from Print & Play Games. You could also use binder clips available at any office supply store.
+
+<img src="./images/snackfolk.jpg" width=1000 />
+
+<img src="./images/flemoids.jpg" width=1000 />
+
+<img src="./images/inventory-items.jpg" width=1000 />
+
+<img src="./images/consumable-items.jpg" width=1000 />
+
+<img src="./images/game3.jpg" width=1000 />
+
+<img src="./images/game1.jpg" width=1000 />
